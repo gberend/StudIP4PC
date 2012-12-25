@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project StudIPcli">
+	<!--ANT 1.7 is required -->
+	<target name="create_run_jar">
+		<delete dir="dist" />
+		<jar destfile="dist/cli.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="com.sdfol.studipcli.main.Launcher" />
+				<attribute name="Class-Path" value="." />
+			</manifest>
+			<fileset dir="bin" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/oauth-core-20090121.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/httpclient-4.1.1.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/httpcore-4.1.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/commons-logging-1.1.1.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/commons-codec-1.4.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/gson-2.2.2.jar" />
+		</jar>
+		<copy file="conn.cfg" todir="dist" />
+		<copy file="auth.cfg" todir="dist" />
+	</target>
+</project>

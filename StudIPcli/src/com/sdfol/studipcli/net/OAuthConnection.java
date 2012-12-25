@@ -13,6 +13,9 @@ import net.oauth.OAuthServiceProvider;
 import net.oauth.client.OAuthClient;
 import net.oauth.client.httpclient4.HttpClient4;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 public class OAuthConnection {
 	private final OAuthData params;
 	private final OAuthAccessor accessor;
@@ -78,15 +81,16 @@ public class OAuthConnection {
 		}
 	}
 
-	public void invoke(HttpMethod method, String url,
+	public JsonObject invoke(HttpMethod method, final String url,
 			Collection<? extends Entry<?, ?>> parameters) {
 		OAuthClient client = new OAuthClient(new HttpClient4());
 		try {
-			OAuthMessage message = client
-					.invoke(accessor, method.getMethod(), params.getServer()
-							.getBaseUrl() + "/api/" + url, parameters);
+			String wholeUrl = params.getServer().getBaseUrl() + "/api/" + url;
+			OAuthMessage message = client.invoke(accessor, method.getMethod(),
+					wholeUrl, parameters);
 			String strMsg = message.readBodyAsString();
-			System.out.println(strMsg);
+			JsonParser parser = new JsonParser();
+			return parser.parse(strMsg).getAsJsonObject();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
