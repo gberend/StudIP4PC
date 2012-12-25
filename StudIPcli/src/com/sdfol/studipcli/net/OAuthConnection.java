@@ -15,8 +15,9 @@ import net.oauth.client.httpclient4.HttpClient4;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.sdfol.studipcli.api.IOAuthConnection;
 
-public class OAuthConnection {
+public class OAuthConnection implements IOAuthConnection {
 	private final OAuthData params;
 	private final OAuthAccessor accessor;
 
@@ -81,8 +82,11 @@ public class OAuthConnection {
 		}
 	}
 
-	public JsonObject invoke(HttpMethod method, final String url,
+	@Override
+	public JsonObject invoke(HttpMethod method, String url,
 			Collection<? extends Entry<?, ?>> parameters) {
+		parameters = parameters == null ? new LinkedList<Entry<String, String>>()
+				: parameters;
 		OAuthClient client = new OAuthClient(new HttpClient4());
 		try {
 			String wholeUrl = params.getServer().getBaseUrl() + "/api/" + url;

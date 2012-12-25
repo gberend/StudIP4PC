@@ -49,4 +49,28 @@ public final class BaseUtils {
 		});
 		return httpClient;
 	}
+
+	public static String clean(String label) {
+		return label.replace('(', ' ').replace(')', ' ').replace(':', ' ')
+				.trim();
+	}
+
+	public static String capitalize(String label) {
+		return replaceSubs(label.substring(0, 1).toUpperCase()
+				+ label.substring(1));
+	}
+
+	public static String decapitalize(String label) {
+		return replaceSubs(label.substring(0, 1).toLowerCase()
+				+ label.substring(1));
+	}
+
+	private static String replaceSubs(String result) {
+		int index;
+		while ((index = result.indexOf('_')) != -1) {
+			char sign = result.charAt(index + 1);
+			result = result.replace("_" + sign, ("" + sign).toUpperCase());
+		}
+		return result;
+	}
 }

@@ -7,11 +7,15 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -24,7 +28,10 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.sdfol.studipcli.api.IRestAPI;
 import com.sdfol.studipcli.core.JsonHelper;
+import com.sdfol.studipcli.impl.RestAPI;
 import com.sdfol.studipcli.net.OAuthConnection;
 import com.sdfol.studipcli.net.OAuthData;
 import com.sdfol.studipcli.net.Server;
@@ -84,9 +91,75 @@ public class Launcher {
 			System.out.println(JsonHelper.getCurrentUser(conn));
 		} else if (cmd.equalsIgnoreCase("routes")) {
 			printRoutes(conn);
+		} else if (cmd.equalsIgnoreCase("genesis")) {
+			printGenesis(conn);
+		} else if (cmd.equalsIgnoreCase("test")) {
+			printTest(conn);
 		} else {
 			System.err.println("Unknown command!");
 		}
+	}
+
+	private static void printTest(OAuthConnection connection) {
+		IRestAPI rest = new RestAPI(connection);
+		System.out.println(rest.getContacts());
+		System.out.println(rest.getContactsGroups());
+		System.out.println(rest.getCourses());
+		System.out.println(rest.getCoursesSemester());
+		System.out.println(rest.getEvents());
+		System.out.println(rest.getMessages());
+		System.out.println(rest.getSemesters());
+		System.out.println(rest.getStudipColors());
+		System.out.println(rest.getStudipSettings());
+	}
+
+	private static void printGenesis(OAuthConnection conn) throws IOException {
+		SortedMap<String, Entry<String, List<String>>> abstrMeths = getAllAbstractMethods(conn);
+		Generator.generateInterface(abstrMeths);
+		Generator.generateImpl(abstrMeths);
+	}
+
+	private static SortedMap<String, Entry<String, List<String>>> getAllAbstractMethods(
+			OAuthConnection conn) {
+		SortedMap<String, Entry<String, List<String>>> map = new TreeMap<String, Entry<String, List<String>>>();
+		for (Entry<String, JsonElement> entry : JsonHelper.getRoutes(conn)) {
+			String[] entryLabelParts = entry.getKey().split("/");
+			JsonObject methodsObj = entry.getValue().getAsJsonObject();
+			for (Entry<String, JsonElement> methodEntry : methodsObj.entrySet()) {
+				if (!methodEntry.getValue().getAsBoolean())
+					continue;
+				List<String> params = new LinkedList<String>();
+				StringBuilder methBld = new StringBuilder();
+				methBld.append(methodEntry.getKey());
+				boolean isFirstParam = true;
+				boolean lastWasParam = false;
+				for (String entryLabelPart : entryLabelParts) {
+					if (entryLabelPart.length() <= 1)
+						continue;
+					if (entryLabelPart.startsWith(":")) {
+						params.add(BaseUtils.decapitalize(BaseUtils
+								.clean(entryLabelPart)));
+						if (isFirstParam) {
+							isFirstParam = false;
+							methBld.append("By");
+						} else {
+							methBld.append("And");
+						}
+						lastWasParam = true;
+					} else if (lastWasParam) {
+						lastWasParam = false;
+						methBld.append("Only");
+						isFirstParam = true;
+					}
+					methBld.append(BaseUtils.capitalize(BaseUtils
+							.clean(entryLabelPart)));
+				}
+				map.put(methBld.toString(),
+						new SimpleEntry<String, List<String>>(entry.getKey(),
+								params));
+			}
+		}
+		return map;
 	}
 
 	private static void printSystem(OAuthConnection conn) {
@@ -113,6 +186,8 @@ public class Launcher {
 		System.out.println("  'semesters'  list all semesters");
 		System.out.println("  'user'       get the current user");
 		System.out.println("  'routes'     list all routes");
+		System.out.println("  'genesis'    generate REST API client");
+		System.out.println("  'test'       experimental testing");
 		System.out.println();
 	}
 
