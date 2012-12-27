@@ -9,11 +9,31 @@ public class Semester {
 	private long seminars_begin;
 	private long seminars_end;
 
-	@Override
-	public String toString() {
-		return "Semester [semester_id=" + semester_id + ", title=" + title
-				+ ", description=" + description + ", begin=" + begin
-				+ ", end=" + end + ", seminars_begin=" + seminars_begin
-				+ ", seminars_end=" + seminars_end + "]";
+	public String getSemesterId() {
+		return semester_id;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public long getBegin() {
+		return begin;
+	}
+
+	public long getEnd() {
+		return end;
+	}
+
+	public long getSeminarsBegin() {
+		return seminars_begin;
+	}
+
+	public long getSeminarsEnd() {
+		return seminars_end;
 	}
 }
