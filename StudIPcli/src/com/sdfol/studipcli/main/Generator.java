@@ -4,10 +4,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.SortedMap;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.sdfol.studipcli.api.IOAuthConnection;
 import com.sdfol.studipcli.api.IRestAPI;
@@ -15,6 +19,123 @@ import com.sdfol.studipcli.net.HttpMethod;
 import com.sdfol.studipcli.utils.BaseUtils;
 
 public final class Generator {
+
+	static void handleJsonObject(JsonObject result) throws IOException {
+		if (result == null)
+			return;
+		Set<Entry<String, JsonElement>> set = result.entrySet();
+		if (set.size() == 1) {
+			Entry<String, JsonElement> first = set.iterator().next();
+			System.out.println(" -> Class: " + first.getKey());
+			JsonElement firstValue = first.getValue();
+			if (firstValue.isJsonObject()) {
+				result = (JsonObject) first.getValue();
+				Generator.createClass(first.getKey(), result);
+			} else if (firstValue.isJsonArray()) {
+				JsonArray array = (JsonArray) first.getValue();
+				result = (JsonObject) array.get(0);
+				Generator.createClass(BaseUtils.singlize(first.getKey()),
+						result);
+			}
+		}
+		System.out.println(result);
+		System.out.println();
+	}
+
+	static String handleSubObjects(Class<?> propType,
+			Entry<String, JsonElement> prop) throws IOException {
+		String propTypeName = propType.getSimpleName();
+		if (prop != null) {
+			if (propType == Object.class) {
+				propTypeName = BaseUtils.capitalize(prop.getKey());
+				JsonObject subObj = new JsonObject();
+				subObj.add(prop.getKey(), prop.getValue());
+				handleJsonObject(subObj);
+			}
+		}
+		return propTypeName;
+	}
+
+	static Class<?> determineType(JsonElement json) {
+		if (json.isJsonArray()) {
+			JsonArray array = (JsonArray) json;
+			if (array.size() >= 1) {
+				Class<?> componentType = determineType(array.get(0));
+				return Array.newInstance(componentType, 0).getClass();
+			}
+			return String[].class;
+			// return Array.class;
+		}
+		if (json.isJsonObject())
+			return Object.class;
+		if (json.isJsonPrimitive()) {
+			try {
+				json.getAsLong();
+				return long.class;
+			} catch (Exception e) {
+			}
+			try {
+				json.getAsDouble();
+				return double.class;
+			} catch (Exception e) {
+			}
+			try {
+				String str = json.getAsString();
+				if (str.equals("true") || str.equals("false"))
+					return boolean.class;
+				return String.class;
+			} catch (Exception e) {
+			}
+			try {
+				json.getAsBoolean();
+				return boolean.class;
+			} catch (Exception e) {
+			}
+		}
+		// isJsonNull() = true
+		return null;
+	}
+
+	static void createClass(String name, JsonObject json) throws IOException {
+		String className = BaseUtils.capitalize(name);
+		File classFile = new File("src/com/sdfol/studipcli/model/" + className
+				+ ".java");
+		classFile.getParentFile().mkdirs();
+		BufferedWriter writer = new BufferedWriter(new FileWriter(classFile));
+		// Start class
+		writer.write("package com.sdfol.studipcli.model;");
+		writer.newLine();
+		writer.newLine();
+		writer.write("public class " + className + " {");
+		writer.newLine();
+		// Fields
+		for (Entry<String, JsonElement> prop : json.entrySet()) {
+			Class<?> propType = determineType(prop.getValue());
+			String propTypeName = handleSubObjects(propType, prop);
+			writer.write(String.format("\tprivate %s %s;", propTypeName,
+					prop.getKey()));
+			writer.newLine();
+		}
+		// Getters
+		for (Entry<String, JsonElement> prop : json.entrySet()) {
+			writer.newLine();
+			Class<?> propType = determineType(prop.getValue());
+			String propTypeName = handleSubObjects(propType, prop);
+			writer.write(String.format("\tpublic %s %s%s() {", propTypeName,
+					propType == boolean.class ? "is" : "get",
+					BaseUtils.capitalize(prop.getKey())));
+			writer.newLine();
+			writer.write(String.format("\t\treturn %s;", prop.getKey()));
+			writer.newLine();
+			writer.write("\t}");
+			writer.newLine();
+		}
+		// Finish class
+		writer.write("}");
+		writer.flush();
+		writer.close();
+		System.out.println("Done with " + classFile.getName() + ".");
+	}
 
 	static void generateInterface(
 			SortedMap<String, Entry<String, List<String>>> abstrMeths)

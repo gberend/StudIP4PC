@@ -1,5 +1,7 @@
 package com.sdfol.studipcli.utils;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -72,5 +74,18 @@ public final class BaseUtils {
 			result = result.replace("_" + sign, ("" + sign).toUpperCase());
 		}
 		return result;
+	}
+
+	public static String singlize(String label) {
+		return label.substring(0, label.length() - 1);
+	}
+
+	public static String toString(Throwable cause, boolean removeLF) {
+		StringWriter str = new StringWriter();
+		cause.printStackTrace(new PrintWriter(str));
+		String text = str.toString();
+		if (removeLF)
+			text = text.replace('\r', ' ').replace('\n', ' ');
+		return text;
 	}
 }

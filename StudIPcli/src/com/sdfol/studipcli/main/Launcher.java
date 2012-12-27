@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,15 +104,26 @@ public class Launcher {
 
 	private static void printTest(OAuthConnection connection) {
 		IRestAPI rest = new RestAPI(connection);
-		System.out.println(rest.getContacts());
-		System.out.println(rest.getContactsGroups());
-		System.out.println(rest.getCourses());
-		System.out.println(rest.getCoursesSemester());
-		System.out.println(rest.getEvents());
-		System.out.println(rest.getMessages());
-		System.out.println(rest.getSemesters());
-		System.out.println(rest.getStudipColors());
-		System.out.println(rest.getStudipSettings());
+
+		for (Method method : rest.getClass().getMethods()) {
+			if (method.getDeclaringClass() == Object.class
+					|| method.getName().equals("getDiscovery"))
+				continue;
+			// if (!method.getName().equalsIgnoreCase("getStudipColors"))
+			// continue;
+			try {
+				System.out.println(" - " + method);
+				Object[] args = (Object[]) Array.newInstance(Object.class,
+						method.getParameterTypes().length);
+				JsonObject result = (JsonObject) method.invoke(rest, args);
+				Generator.handleJsonObject(result);
+			} catch (Exception e) {
+				Throwable cause = e;
+				while (cause.getCause() != null)
+					cause = cause.getCause();
+				System.err.println(BaseUtils.toString(cause, true));
+			}
+		}
 	}
 
 	private static void printGenesis(OAuthConnection conn) throws IOException {
